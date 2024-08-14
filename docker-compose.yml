@@ -1,0 +1,11 @@
+services:
+  gortfolio:
+    container_name: gortfolio
+    volumes:
+      - .:/project
+    working_dir: /project
+    tty: true
+    build: "./"
+    ports:
+      - "8080:8080"
+    command: sh -c "go mod tidy && air -c .air.toml"
