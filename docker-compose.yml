@@ -9,20 +9,35 @@ services:
     ports:
       - "8080:8080"
     command: sh -c "go mod tidy && air -c .air.toml"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PORT=${DB_PORT}
+      - DB_PASSWORD=${DB_PASSWORD}
 
   db:
     container_name: gortfolio_db
     image: mysql:8.0
     platform: linux/arm64
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: gortfolio
-      MYSQL_USER: gortfolio
-      MYSQL_PASSWORD: gortfolio
-      MYSQL_HOST: gortfolio
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_HOST=${DB_HOST}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PORT=${DB_PORT}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - ./mysql/ep:/docker-entrypoint-initdb.d
       - ./mysql/data:/var/lib/mysql
       - ./mysql/my.conf:/etc/mysql/conf.d/my.conf
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

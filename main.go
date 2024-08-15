@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ei-sugimoto/gortfolio/ent"
 	"github.com/ei-sugimoto/gortfolio/services"
 	"github.com/gin-gonic/gin"
 )
@@ -8,6 +9,8 @@ import (
 func main() {
 
 	r := gin.Default()
+
+	ent.Migrate()
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{

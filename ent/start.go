@@ -17,6 +17,10 @@ func Migrate() {
 	dbPort := os.Getenv("DB_PORT")
 	dbDatabase := os.Getenv("DB_DATABASE")
 
+	if dbUser == "" || dbPassword == "" || dbHost == "" || dbPort == "" || dbDatabase == "" {
+		log.Fatalln("DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE must be set")
+	}
+
 	dns := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?",
 		dbUser,
