@@ -8,3 +8,6 @@ import (
 
 // Article is the predicate function for article builders.
 type Article func(*sql.Selector)
+
+// ArticleHistory is the predicate function for articlehistory builders.
+type ArticleHistory func(*sql.Selector)

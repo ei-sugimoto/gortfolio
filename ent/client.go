@@ -14,7 +14,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/ei-sugimoto/gortfolio/ent/article"
+	"github.com/ei-sugimoto/gortfolio/ent/articlehistory"
 )
 
 // Client is the client that holds all ent builders.
@@ -24,6 +26,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Article is the client for interacting with the Article builders.
 	Article *ArticleClient
+	// ArticleHistory is the client for interacting with the ArticleHistory builders.
+	ArticleHistory *ArticleHistoryClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -36,6 +40,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Article = NewArticleClient(c.config)
+	c.ArticleHistory = NewArticleHistoryClient(c.config)
 }
 
 type (
@@ -126,9 +131,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Article: NewArticleClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Article:        NewArticleClient(cfg),
+		ArticleHistory: NewArticleHistoryClient(cfg),
 	}, nil
 }
 
@@ -146,9 +152,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Article: NewArticleClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Article:        NewArticleClient(cfg),
+		ArticleHistory: NewArticleHistoryClient(cfg),
 	}, nil
 }
 
@@ -178,12 +185,14 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Article.Use(hooks...)
+	c.ArticleHistory.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Article.Intercept(interceptors...)
+	c.ArticleHistory.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -191,6 +200,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *ArticleMutation:
 		return c.Article.mutate(ctx, m)
+	case *ArticleHistoryMutation:
+		return c.ArticleHistory.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -329,12 +340,161 @@ func (c *ArticleClient) mutate(ctx context.Context, m *ArticleMutation) (Value, 
 	}
 }
 
+// ArticleHistoryClient is a client for the ArticleHistory schema.
+type ArticleHistoryClient struct {
+	config
+}
+
+// NewArticleHistoryClient returns a client for the ArticleHistory from the given config.
+func NewArticleHistoryClient(c config) *ArticleHistoryClient {
+	return &ArticleHistoryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `articlehistory.Hooks(f(g(h())))`.
+func (c *ArticleHistoryClient) Use(hooks ...Hook) {
+	c.hooks.ArticleHistory = append(c.hooks.ArticleHistory, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `articlehistory.Intercept(f(g(h())))`.
+func (c *ArticleHistoryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ArticleHistory = append(c.inters.ArticleHistory, interceptors...)
+}
+
+// Create returns a builder for creating a ArticleHistory entity.
+func (c *ArticleHistoryClient) Create() *ArticleHistoryCreate {
+	mutation := newArticleHistoryMutation(c.config, OpCreate)
+	return &ArticleHistoryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ArticleHistory entities.
+func (c *ArticleHistoryClient) CreateBulk(builders ...*ArticleHistoryCreate) *ArticleHistoryCreateBulk {
+	return &ArticleHistoryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ArticleHistoryClient) MapCreateBulk(slice any, setFunc func(*ArticleHistoryCreate, int)) *ArticleHistoryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ArticleHistoryCreateBulk{err: fmt.Errorf("calling to ArticleHistoryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ArticleHistoryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ArticleHistoryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ArticleHistory.
+func (c *ArticleHistoryClient) Update() *ArticleHistoryUpdate {
+	mutation := newArticleHistoryMutation(c.config, OpUpdate)
+	return &ArticleHistoryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ArticleHistoryClient) UpdateOne(ah *ArticleHistory) *ArticleHistoryUpdateOne {
+	mutation := newArticleHistoryMutation(c.config, OpUpdateOne, withArticleHistory(ah))
+	return &ArticleHistoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ArticleHistoryClient) UpdateOneID(id int) *ArticleHistoryUpdateOne {
+	mutation := newArticleHistoryMutation(c.config, OpUpdateOne, withArticleHistoryID(id))
+	return &ArticleHistoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ArticleHistory.
+func (c *ArticleHistoryClient) Delete() *ArticleHistoryDelete {
+	mutation := newArticleHistoryMutation(c.config, OpDelete)
+	return &ArticleHistoryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ArticleHistoryClient) DeleteOne(ah *ArticleHistory) *ArticleHistoryDeleteOne {
+	return c.DeleteOneID(ah.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ArticleHistoryClient) DeleteOneID(id int) *ArticleHistoryDeleteOne {
+	builder := c.Delete().Where(articlehistory.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ArticleHistoryDeleteOne{builder}
+}
+
+// Query returns a query builder for ArticleHistory.
+func (c *ArticleHistoryClient) Query() *ArticleHistoryQuery {
+	return &ArticleHistoryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeArticleHistory},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ArticleHistory entity by its id.
+func (c *ArticleHistoryClient) Get(ctx context.Context, id int) (*ArticleHistory, error) {
+	return c.Query().Where(articlehistory.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ArticleHistoryClient) GetX(ctx context.Context, id int) *ArticleHistory {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryArticle queries the article edge of a ArticleHistory.
+func (c *ArticleHistoryClient) QueryArticle(ah *ArticleHistory) *ArticleQuery {
+	query := (&ArticleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ah.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(articlehistory.Table, articlehistory.FieldID, id),
+			sqlgraph.To(article.Table, article.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, articlehistory.ArticleTable, articlehistory.ArticleColumn),
+		)
+		fromV = sqlgraph.Neighbors(ah.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ArticleHistoryClient) Hooks() []Hook {
+	return c.hooks.ArticleHistory
+}
+
+// Interceptors returns the client interceptors.
+func (c *ArticleHistoryClient) Interceptors() []Interceptor {
+	return c.inters.ArticleHistory
+}
+
+func (c *ArticleHistoryClient) mutate(ctx context.Context, m *ArticleHistoryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ArticleHistoryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ArticleHistoryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ArticleHistoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ArticleHistoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ArticleHistory mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Article []ent.Hook
+		Article, ArticleHistory []ent.Hook
 	}
 	inters struct {
-		Article []ent.Interceptor
+		Article, ArticleHistory []ent.Interceptor
 	}
 )

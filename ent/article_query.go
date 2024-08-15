@@ -22,6 +22,7 @@ type ArticleQuery struct {
 	order      []article.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Article
+	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -332,9 +333,13 @@ func (aq *ArticleQuery) prepareQuery(ctx context.Context) error {
 
 func (aq *ArticleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Article, error) {
 	var (
-		nodes = []*Article{}
-		_spec = aq.querySpec()
+		nodes   = []*Article{}
+		withFKs = aq.withFKs
+		_spec   = aq.querySpec()
 	)
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, article.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Article).scanValues(nil, columns)
 	}

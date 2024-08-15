@@ -19,8 +19,9 @@ type Article struct {
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// URL holds the value of the "url" field.
-	URL          string `json:"url,omitempty"`
-	selectValues sql.SelectValues
+	URL                     string `json:"url,omitempty"`
+	article_history_article *int
+	selectValues            sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -32,6 +33,8 @@ func (*Article) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case article.FieldTitle, article.FieldURL:
 			values[i] = new(sql.NullString)
+		case article.ForeignKeys[0]: // article_history_article
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -64,6 +67,13 @@ func (a *Article) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field url", values[i])
 			} else if value.Valid {
 				a.URL = value.String
+			}
+		case article.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field article_history_article", value)
+			} else if value.Valid {
+				a.article_history_article = new(int)
+				*a.article_history_article = int(value.Int64)
 			}
 		default:
 			a.selectValues.Set(columns[i], values[i])

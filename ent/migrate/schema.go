@@ -13,18 +13,40 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "title", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString},
+		{Name: "article_history_article", Type: field.TypeInt, Nullable: true},
 	}
 	// ArticlesTable holds the schema information for the "articles" table.
 	ArticlesTable = &schema.Table{
 		Name:       "articles",
 		Columns:    ArticlesColumns,
 		PrimaryKey: []*schema.Column{ArticlesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "articles_article_histories_article",
+				Columns:    []*schema.Column{ArticlesColumns[3]},
+				RefColumns: []*schema.Column{ArticleHistoriesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// ArticleHistoriesColumns holds the columns for the "article_histories" table.
+	ArticleHistoriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// ArticleHistoriesTable holds the schema information for the "article_histories" table.
+	ArticleHistoriesTable = &schema.Table{
+		Name:       "article_histories",
+		Columns:    ArticleHistoriesColumns,
+		PrimaryKey: []*schema.Column{ArticleHistoriesColumns[0]},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ArticlesTable,
+		ArticleHistoriesTable,
 	}
 )
 
 func init() {
+	ArticlesTable.ForeignKeys[0].RefTable = ArticleHistoriesTable
 }
