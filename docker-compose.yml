@@ -19,6 +19,7 @@ services:
       MYSQL_DATABASE: gortfolio
       MYSQL_USER: gortfolio
       MYSQL_PASSWORD: gortfolio
+      MYSQL_HOST: gortfolio
     ports:
       - "3306:3306"
     volumes:
