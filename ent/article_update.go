@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/ei-sugimoto/gortfolio/ent/article"
+	"github.com/ei-sugimoto/gortfolio/ent/articlehistory"
 	"github.com/ei-sugimoto/gortfolio/ent/predicate"
 )
 
@@ -55,9 +56,34 @@ func (au *ArticleUpdate) SetNillableURL(s *string) *ArticleUpdate {
 	return au
 }
 
+// SetOwnerID sets the "owner" edge to the ArticleHistory entity by ID.
+func (au *ArticleUpdate) SetOwnerID(id int) *ArticleUpdate {
+	au.mutation.SetOwnerID(id)
+	return au
+}
+
+// SetNillableOwnerID sets the "owner" edge to the ArticleHistory entity by ID if the given value is not nil.
+func (au *ArticleUpdate) SetNillableOwnerID(id *int) *ArticleUpdate {
+	if id != nil {
+		au = au.SetOwnerID(*id)
+	}
+	return au
+}
+
+// SetOwner sets the "owner" edge to the ArticleHistory entity.
+func (au *ArticleUpdate) SetOwner(a *ArticleHistory) *ArticleUpdate {
+	return au.SetOwnerID(a.ID)
+}
+
 // Mutation returns the ArticleMutation object of the builder.
 func (au *ArticleUpdate) Mutation() *ArticleMutation {
 	return au.mutation
+}
+
+// ClearOwner clears the "owner" edge to the ArticleHistory entity.
+func (au *ArticleUpdate) ClearOwner() *ArticleUpdate {
+	au.mutation.ClearOwner()
+	return au
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -101,6 +127,35 @@ func (au *ArticleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := au.mutation.URL(); ok {
 		_spec.SetField(article.FieldURL, field.TypeString, value)
+	}
+	if au.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   article.OwnerTable,
+			Columns: []string{article.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(articlehistory.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   article.OwnerTable,
+			Columns: []string{article.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(articlehistory.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -150,9 +205,34 @@ func (auo *ArticleUpdateOne) SetNillableURL(s *string) *ArticleUpdateOne {
 	return auo
 }
 
+// SetOwnerID sets the "owner" edge to the ArticleHistory entity by ID.
+func (auo *ArticleUpdateOne) SetOwnerID(id int) *ArticleUpdateOne {
+	auo.mutation.SetOwnerID(id)
+	return auo
+}
+
+// SetNillableOwnerID sets the "owner" edge to the ArticleHistory entity by ID if the given value is not nil.
+func (auo *ArticleUpdateOne) SetNillableOwnerID(id *int) *ArticleUpdateOne {
+	if id != nil {
+		auo = auo.SetOwnerID(*id)
+	}
+	return auo
+}
+
+// SetOwner sets the "owner" edge to the ArticleHistory entity.
+func (auo *ArticleUpdateOne) SetOwner(a *ArticleHistory) *ArticleUpdateOne {
+	return auo.SetOwnerID(a.ID)
+}
+
 // Mutation returns the ArticleMutation object of the builder.
 func (auo *ArticleUpdateOne) Mutation() *ArticleMutation {
 	return auo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the ArticleHistory entity.
+func (auo *ArticleUpdateOne) ClearOwner() *ArticleUpdateOne {
+	auo.mutation.ClearOwner()
+	return auo
 }
 
 // Where appends a list predicates to the ArticleUpdate builder.
@@ -226,6 +306,35 @@ func (auo *ArticleUpdateOne) sqlSave(ctx context.Context) (_node *Article, err e
 	}
 	if value, ok := auo.mutation.URL(); ok {
 		_spec.SetField(article.FieldURL, field.TypeString, value)
+	}
+	if auo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   article.OwnerTable,
+			Columns: []string{article.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(articlehistory.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   article.OwnerTable,
+			Columns: []string{article.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(articlehistory.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Article{config: auo.config}
 	_spec.Assign = _node.assignValues

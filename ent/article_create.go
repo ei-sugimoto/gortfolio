@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/ei-sugimoto/gortfolio/ent/article"
+	"github.com/ei-sugimoto/gortfolio/ent/articlehistory"
 )
 
 // ArticleCreate is the builder for creating a Article entity.
@@ -29,6 +30,25 @@ func (ac *ArticleCreate) SetTitle(s string) *ArticleCreate {
 func (ac *ArticleCreate) SetURL(s string) *ArticleCreate {
 	ac.mutation.SetURL(s)
 	return ac
+}
+
+// SetOwnerID sets the "owner" edge to the ArticleHistory entity by ID.
+func (ac *ArticleCreate) SetOwnerID(id int) *ArticleCreate {
+	ac.mutation.SetOwnerID(id)
+	return ac
+}
+
+// SetNillableOwnerID sets the "owner" edge to the ArticleHistory entity by ID if the given value is not nil.
+func (ac *ArticleCreate) SetNillableOwnerID(id *int) *ArticleCreate {
+	if id != nil {
+		ac = ac.SetOwnerID(*id)
+	}
+	return ac
+}
+
+// SetOwner sets the "owner" edge to the ArticleHistory entity.
+func (ac *ArticleCreate) SetOwner(a *ArticleHistory) *ArticleCreate {
+	return ac.SetOwnerID(a.ID)
 }
 
 // Mutation returns the ArticleMutation object of the builder.
@@ -104,6 +124,23 @@ func (ac *ArticleCreate) createSpec() (*Article, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.URL(); ok {
 		_spec.SetField(article.FieldURL, field.TypeString, value)
 		_node.URL = value
+	}
+	if nodes := ac.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   article.OwnerTable,
+			Columns: []string{article.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(articlehistory.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.article_history_article = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

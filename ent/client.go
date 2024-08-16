@@ -315,6 +315,22 @@ func (c *ArticleClient) GetX(ctx context.Context, id int) *Article {
 	return obj
 }
 
+// QueryOwner queries the owner edge of a Article.
+func (c *ArticleClient) QueryOwner(a *Article) *ArticleHistoryQuery {
+	query := (&ArticleHistoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(article.Table, article.FieldID, id),
+			sqlgraph.To(articlehistory.Table, articlehistory.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, article.OwnerTable, article.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ArticleClient) Hooks() []Hook {
 	return c.hooks.Article

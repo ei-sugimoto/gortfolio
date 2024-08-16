@@ -4,6 +4,7 @@ package article
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -15,8 +16,17 @@ const (
 	FieldTitle = "title"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// Table holds the table name of the article in the database.
 	Table = "articles"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "articles"
+	// OwnerInverseTable is the table name for the ArticleHistory entity.
+	// It exists in this package in order to avoid circular dependency with the "articlehistory" package.
+	OwnerInverseTable = "article_histories"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "article_history_article"
 )
 
 // Columns holds all SQL columns for article fields.
@@ -63,4 +73,18 @@ func ByTitle(opts ...sql.OrderTermOption) OrderOption {
 // ByURL orders the results by the url field.
 func ByURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldURL, opts...).ToFunc()
+}
+
+// ByOwnerField orders the results by owner field.
+func ByOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOwnerStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newOwnerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OwnerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
+	)
 }

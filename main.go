@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/ei-sugimoto/gortfolio/ent"
-	"github.com/ei-sugimoto/gortfolio/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,7 +9,7 @@ func main() {
 
 	r := gin.Default()
 
-	ent.Migrate()
+	client := ent.Migrate()
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -19,8 +18,8 @@ func main() {
 	})
 
 	r.GET("/qiita", func(c *gin.Context) {
-		qiita := services.NewQiita("")
-		items, err := qiita.GetItems()
+		items, err := GetArticle(client, c)
+
 		if err != nil {
 			c.JSON(500, gin.H{
 				"message": "Internal Server Error",
@@ -30,4 +29,5 @@ func main() {
 	})
 
 	r.Run(":8080")
+
 }

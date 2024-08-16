@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/ei-sugimoto/gortfolio/ent/article"
+	"github.com/ei-sugimoto/gortfolio/ent/articlehistory"
 )
 
 // Article is the model entity for the Article schema.
@@ -19,9 +20,32 @@ type Article struct {
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// URL holds the value of the "url" field.
-	URL                     string `json:"url,omitempty"`
+	URL string `json:"url,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ArticleQuery when eager-loading is set.
+	Edges                   ArticleEdges `json:"edges"`
 	article_history_article *int
 	selectValues            sql.SelectValues
+}
+
+// ArticleEdges holds the relations/edges for other nodes in the graph.
+type ArticleEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *ArticleHistory `json:"owner,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ArticleEdges) OwnerOrErr() (*ArticleHistory, error) {
+	if e.Owner != nil {
+		return e.Owner, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: articlehistory.Label}
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -86,6 +110,11 @@ func (a *Article) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (a *Article) Value(name string) (ent.Value, error) {
 	return a.selectValues.Get(name)
+}
+
+// QueryOwner queries the "owner" edge of the Article entity.
+func (a *Article) QueryOwner() *ArticleHistoryQuery {
+	return NewArticleClient(a.config).QueryOwner(a)
 }
 
 // Update returns a builder for updating this Article.
