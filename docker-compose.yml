@@ -41,3 +41,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  front:
+    container_name: gortfolio_front
+    build: ./front
+    volumes:
+      - ./front:/front
+      - node_modules:/front/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gortfolio
+      - db
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    tty: true
+    working_dir: /front
+
+volumes:
+  node_modules:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/front/node_modules
+      o: bind

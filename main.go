@@ -1,13 +1,24 @@
 package main
 
 import (
+	"time"
+
 	"github.com/ei-sugimoto/gortfolio/ent"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 
 	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000, http://front:3000"}, // 許可するオリジンを指定
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	client := ent.Migrate()
 
@@ -17,7 +28,7 @@ func main() {
 		})
 	})
 
-	r.GET("/qiita", func(c *gin.Context) {
+	r.GET("/article", func(c *gin.Context) {
 		items, err := GetArticle(client, c)
 
 		if err != nil {
